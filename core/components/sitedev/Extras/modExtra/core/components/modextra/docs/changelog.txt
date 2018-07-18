@@ -1,0 +1,5 @@
+Changelog for msDeferredMessages.
+
+1.0.0-pl
+==============
+- New build script.

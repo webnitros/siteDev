@@ -1,0 +1,64 @@
+Changelog for siteDev.
+
+1.0.0-beta
+==============
+- Верстка и js framework bootstrap4
+- Добавление директории с шаблонами для Fenom /core/elements
+- Добавление modExtra в папку /Extras/modExtra
+- Все чанки,ресурсы,шабоны хранятся в /core/elements
+- Добавление старторых страниц
+    - Главная
+    - Каталог
+        - Стиральные машины
+            -   Стиральная машина SAMSUNG WW80J5545FW'
+        - Телевизоры
+            -   Ultra HD (4K) LED телевизор SAMSUNG UE40MU6100UXRU
+    - Корзина
+    - system
+    -   Доступ запрещен
+    -   Страница не найдена
+    -   Сайт временно не доступен
+    -   sitemap.xml
+    -   robots.txt
+- Fenom включен по умолчанию
+- Добавление сниппет MarkDownFenom - для вывода страниц в формате .md (директория core/elements/markdown/main.md)
+- Кнопка поднять вверх
+- Системные настройки с автоустановкой добавленных ресурсов
+    default_template: auto,
+    error_page: auto,
+    site_unavailable_page: auto,
+    site_start: auto,
+    unauthorized_page: auto,
+    friendly_alias_translit: russian,
+    friendly_urls: true,
+    global_duplicate_uri_check: true,
+    allow_multiple_emails: true,
+    friendly_alias_realtime: true,
+    friendly_urls_strict: true,
+    hidemenu_default: true,
+    use_alias_path: true,
+    resource_tree_node_name: menutitle,
+    resource_tree_node_tooltip: menutitle,
+    automatic_alias: true,
+    auto_check_pkg_updates: false,
+    feed_modx_news_enabled: false,
+    feed_modx_security_enabled: false,
+    link_tag_scheme: full,
+    locale: ru_RU.utf-8,
+    password_generated_length: 6,
+    password_min_length: 6,
+    publish_default: true,
+    signupemail_message: <p>Здравствуйте [[+uid]],</p><p>Ваши данные для административного входа на [[+sname]]:</p>                <p><strong>Логин:</strong> [[+uid]]<br /><strong>Пароль:</strong> [[+pwd]]<br /></p>                <p>После того как вы войдете в административную часть MODX [[+surl]], вы можете изменить свой пароль.</p>                <p>С уважением, <br />Администрация сайта</p>,
+
+    // pdoTools
+    pdotools_fenom_default: true,
+    pdotools_fenom_modx: true,
+    pdotools_fenom_parser: true,
+    pdotools_fenom_php: true,
+- Приложения
+    - Ace
+    - pdoTools
+    - Markdown
+    - MinifyX
+    - miniShop2
+    - AjaxForm
