@@ -10,10 +10,10 @@ if (!defined('MODX_CORE_PATH')) {
 return [
     'name' => 'siteDev',
     'name_lower' => 'sitedev',
-    'version' => '1.0.0',
+    'version' => '1.1.1',
     'release' => 'pl',
     // Install package to site right after build
-    'install' => true,
+    'install' => false,
     // Which elements should be updated on package upgrade
     'update' => [
         'chunks' => false,
@@ -24,6 +24,8 @@ return [
         'snippets' => true,
         'templates' => true,
         'widgets' => false,
+        'policies' => false,
+        'events' => false,
     ],
     // Which elements should be static by default
     'static' => [

@@ -19,6 +19,18 @@ switch ($options[xPDOTransport::PACKAGE_ACTION]) {
         }
 
 
+        $default_template_category = null;
+        if ($template = $modx->getObject('modTemplate', array('templatename' => 'Catalog'))) {
+            $default_template_category = $template->get('id');
+        }
+
+
+        $default_template_product = null;
+        if ($template = $modx->getObject('modTemplate', array('templatename' => 'Product'))) {
+            $default_template_product = $template->get('id');
+        }
+
+
         $error_page = null;
         if ($resource = $modx->getObject('modResource', array('alias' => 'error404'))) {
             $error_page = $resource->get('id');
@@ -40,6 +52,13 @@ switch ($options[xPDOTransport::PACKAGE_ACTION]) {
         if ($resource = $modx->getObject('modResource', array('alias' => 'index'))) {
             $site_start = $resource->get('id');
         }
+
+
+        $site_catalog = null;
+        if ($resource = $modx->getObject('modResource', array('alias' => 'catalog'))) {
+            $site_catalog = $resource->get('id');
+        }
+
 
 
         $settings = array(
@@ -67,6 +86,7 @@ switch ($options[xPDOTransport::PACKAGE_ACTION]) {
             'password_generated_length' => '6',
             'password_min_length' => '6',
             'publish_default' => true,
+            'log_deprecated' => false,
             'signupemail_message' => '<p>Здравствуйте [[+uid]],</p><p>Ваши данные для административного входа на [[+sname]]:</p>                <p><strong>Логин:</strong> [[+uid]]<br /><strong>Пароль:</strong> [[+pwd]]<br /></p>                <p>После того как вы войдете в административную часть MODX [[+surl]], вы можете изменить свой пароль.</p>                <p>С уважением, <br />Администрация сайта</p>',
 
             // pdoTools
@@ -74,15 +94,22 @@ switch ($options[xPDOTransport::PACKAGE_ACTION]) {
             'pdotools_fenom_modx' => true,
             'pdotools_fenom_parser' => true,
             'pdotools_fenom_php' => true,
+
+            'msdemodata_parent_resource' => $site_catalog,
+            'ms2_template_category_default' => $default_template_category,
+            'ms2_template_product_default' => $default_template_product,
             #'pdotools_elements_path' => '{core_path}components/'.$transport->name.'/elements/',
         );
 
         foreach ($settings as $key => $value) {
             /* @var modSystemSetting $tmp */
-            if ($tmp = $modx->getObject('modSystemSetting', array('key' => $key))) {
-                $tmp->set('value', $value);
-                $tmp->save();
+            if (!$tmp = $modx->getObject('modSystemSetting', array('key' => $key))) {
+                $tmp = $modx->newObject('modSystemSetting');
+                $tmp->set('key',$key);
             }
+
+            $tmp->set('value', $value);
+            $tmp->save();
         }
 
         $success = true;

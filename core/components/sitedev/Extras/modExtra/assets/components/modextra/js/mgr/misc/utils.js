@@ -1,3 +1,19 @@
+Ext.Loader.load([
+    MODx.config.assets_url + 'components/minishop2/js/mgr/misc/strftime-min-1.3.js'
+]);
+
+modExtra.utils.formatDate = function (string) {
+    if (string && string != '0000-00-00 00:00:00' && string != '-1-11-30 00:00:00' && string != 0) {
+        var date = /^[0-9]+$/.test(string)
+            ? new Date(string * 1000)
+            : new Date(string.replace(/(\d+)-(\d+)-(\d+)/, '$2/$3/$1'));
+        return date.strftime(modExtra.config['date_format']);
+    }
+    else {
+        return '&nbsp;';
+    }
+};
+
 modExtra.utils.renderBoolean = function (value) {
     return value
         ? String.format('<span class="green">{0}</span>', _('yes'))
@@ -95,5 +111,22 @@ modExtra.utils.renderActions = function (value, props, row) {
     return String.format(
         '<ul class="modextra-row-actions">{0}</ul>',
         res.join('')
+    );
+};
+
+
+modExtra.utils.userLink = function (value, id, blank) {
+    if (!value) {
+        return '';
+    }
+    else if (!id) {
+        return value;
+    }
+
+    return String.format(
+        '<a href="?a=security/user/update&id={0}" class="ms2-link" target="{1}">{2}</a>',
+        id,
+        (blank ? '_blank' : '_self'),
+        value
     );
 };

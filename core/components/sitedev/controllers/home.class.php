@@ -56,8 +56,8 @@ class siteDevHomeManagerController extends modExtraManagerController
         $this->addJavascript($this->siteDev->config['jsUrl'] . 'mgr/sitedev.js');
         $this->addJavascript($this->siteDev->config['jsUrl'] . 'mgr/misc/utils.js');
         $this->addJavascript($this->siteDev->config['jsUrl'] . 'mgr/misc/combo.js');
-        $this->addJavascript($this->siteDev->config['jsUrl'] . 'mgr/widgets/items.grid.js');
-        $this->addJavascript($this->siteDev->config['jsUrl'] . 'mgr/widgets/items.windows.js');
+        $this->addJavascript($this->siteDev->config['jsUrl'] . 'mgr/widgets/packages.grid.js');
+        $this->addJavascript($this->siteDev->config['jsUrl'] . 'mgr/widgets/packages.windows.js');
         $this->addJavascript($this->siteDev->config['jsUrl'] . 'mgr/widgets/home.panel.js');
         $this->addJavascript($this->siteDev->config['jsUrl'] . 'mgr/sections/home.js');
 

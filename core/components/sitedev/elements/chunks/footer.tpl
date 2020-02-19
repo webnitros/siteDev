@@ -9,7 +9,7 @@
         </div>
         <div class="col-lg-4">
             <p class="">&copy;2018 [[++site_name]]</p>
-            <a href="http://bustep.ru/"></a>
+            <a href="http://bustep.ru/">bustep.ru</a>
         </div>
     </div>
 </footer>

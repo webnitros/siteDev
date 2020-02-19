@@ -3,7 +3,7 @@ var siteDev = function (config) {
     siteDev.superclass.constructor.call(this, config);
 };
 Ext.extend(siteDev, Ext.Component, {
-    page: {}, window: {}, grid: {}, tree: {}, panel: {}, combo: {}, config: {}, view: {}, utils: {}
+    page: {}, window: {}, grid: {}, tree: {}, panel: {}, combo: {}, config: {}, view: {}, utils: {}, buttons: {}
 });
 Ext.reg('sitedev', siteDev);
 

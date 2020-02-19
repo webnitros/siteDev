@@ -4,9 +4,8 @@ class modExtraItemUpdateProcessor extends modObjectUpdateProcessor
 {
     public $objectType = 'modExtraItem';
     public $classKey = 'modExtraItem';
-    public $languageTopics = ['modextra'];
+    public $languageTopics = ['modextra:manager'];
     //public $permission = 'save';
-
 
     /**
      * We doing special check of permission

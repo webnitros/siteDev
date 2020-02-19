@@ -1,3 +1,7 @@
+http://sitedev.bustep.ru/siteDev/_build/build.php?download=1
+
+
+
 ## Quick start
 
 * Install MODX Revolution

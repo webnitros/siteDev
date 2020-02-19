@@ -7,6 +7,9 @@ if (!$transport->xpdo || !($transport instanceof xPDOTransport)) {
 }
 
 $modx =& $transport->xpdo;
+
+
+
 $packages = [
     'Ace' => [
         'version' => '1.6.5-pl',
@@ -14,10 +17,6 @@ $packages = [
     ],
     'pdoTools' => [
         'version' => '2.10.0-pl',
-        'service_url' => 'modstore.pro',
-    ],
-    'Markdown' => [
-        'version' => '1.3.0-pl',
         'service_url' => 'modstore.pro',
     ],
     'MinifyX' => [
@@ -28,15 +27,32 @@ $packages = [
         'version' => '2.4.12-pl',
         'service_url' => 'modstore.pro',
     ],
-    'AjaxForm' => [
-        'version' => '1.1.9-pl',
-        'service_url' => 'modstore.pro',
-    ],
     'translit' => [
         'version' => '1.0.0-beta',
         'service_url' => 'modx.com',
     ],
+    'msDemoData' => [
+        'version' => '1.0.0-pl',
+        'service_url' => 'modstore.pro',
+    ],
+    'ClientConfig' => [
+        'version' => '2.0.0-pl',
+        'service_url' => 'modx.com',
+    ],
+    'modDevTools' => [
+        'version' => '1.2.1-pl',
+        'service_url' => 'modstore.pro',
+    ],
+    'hideSource' => [
+        'version' => '1.0.0-beta',
+        'service_url' => 'modstore.pro',
+    ],
+    'controlErrorLog' => [
+        'version' => '1.3.0-pl',
+        'service_url' => 'modstore.pro',
+    ],
 ];
+
 
 $downloadPackage = function ($src, $dst) {
     if (ini_get('allow_url_fopen')) {
@@ -157,23 +173,29 @@ $success = false;
 switch ($options[xPDOTransport::PACKAGE_ACTION]) {
     case xPDOTransport::ACTION_INSTALL:
     case xPDOTransport::ACTION_UPGRADE:
-        foreach ($packages as $name => $data) {
-            if (!is_array($data)) {
-                $data = ['version' => $data];
-            }
-            $installed = $modx->getIterator('transport.modTransportPackage', ['package_name' => $name]);
-            /** @var modTransportPackage $package */
-            foreach ($installed as $package) {
-                if ($package->compareVersion($data['version'], '<=')) {
-                    continue(2);
+        if (array_key_exists('install_packages', $options)) {
+            $install_packages = $options['install_packages'];
+            $install_packages['pdoTools'] = 'pdoTools';
+            foreach ($packages as $name => $data) {
+            if (in_array($name, $install_packages)) {
+                if (!is_array($data)) {
+                    $data = ['version' => $data];
                 }
+                $installed = $modx->getIterator('transport.modTransportPackage', ['package_name' => $name]);
+                /** @var modTransportPackage $package */
+                foreach ($installed as $package) {
+                    if ($package->compareVersion($data['version'], '<=')) {
+                        continue(2);
+                    }
+                }
+                $modx->log(modX::LOG_LEVEL_INFO, "Trying to install <b>{$name}</b>. Please wait...");
+                $response = $installPackage($name, $data);
+                $level = $response['success']
+                    ? modX::LOG_LEVEL_INFO
+                    : modX::LOG_LEVEL_ERROR;
+                $modx->log($level, $response['message']);
             }
-            $modx->log(modX::LOG_LEVEL_INFO, "Trying to install <b>{$name}</b>. Please wait...");
-            $response = $installPackage($name, $data);
-            $level = $response['success']
-                ? modX::LOG_LEVEL_INFO
-                : modX::LOG_LEVEL_ERROR;
-            $modx->log($level, $response['message']);
+        }
         }
         $success = true;
         break;

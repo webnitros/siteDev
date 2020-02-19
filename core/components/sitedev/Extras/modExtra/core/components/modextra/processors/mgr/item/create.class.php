@@ -4,9 +4,8 @@ class modExtraItemCreateProcessor extends modObjectCreateProcessor
 {
     public $objectType = 'modExtraItem';
     public $classKey = 'modExtraItem';
-    public $languageTopics = ['modextra'];
+    public $languageTopics = ['modextra:manager'];
     //public $permission = 'create';
-
 
     /**
      * @return bool
@@ -19,7 +18,7 @@ class modExtraItemCreateProcessor extends modObjectCreateProcessor
         } elseif ($this->modx->getCount($this->classKey, ['name' => $name])) {
             $this->modx->error->addField('name', $this->modx->lexicon('modextra_item_err_ae'));
         }
-
+        $this->setProperty('mode', 'new');
         return parent::beforeSet();
     }
 

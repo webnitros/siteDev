@@ -3,7 +3,7 @@ var modExtra = function (config) {
     modExtra.superclass.constructor.call(this, config);
 };
 Ext.extend(modExtra, Ext.Component, {
-    page: {}, window: {}, grid: {}, tree: {}, panel: {}, combo: {}, config: {}, view: {}, utils: {}
+    page: {}, window: {}, grid: {}, tree: {}, panel: {}, combo: {}, config: {}, view: {}, utils: {}, buttons: {}
 });
 Ext.reg('modextra', modExtra);
 

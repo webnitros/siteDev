@@ -1,3 +1,5 @@
+http://sitedev.bustep.ru/siteDev/_build/build.php?download=1
+
 # Сборка для разработки
 
 Заготовка сайта на MODX REVOLUTION для разработки приложения на Fenom + Bootstrap 4

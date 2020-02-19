@@ -8,7 +8,6 @@
 <div class="container">
     {block 'crumbs'}
     {include 'file:chunks/crumbs.tpl'}
-</ol>
     {/block}
     {block 'main'}
     <div id="content" class="main">

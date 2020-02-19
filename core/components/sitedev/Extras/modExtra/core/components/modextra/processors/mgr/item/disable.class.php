@@ -1,40 +1,11 @@
 <?php
-
-class modExtraItemDisableProcessor extends modObjectProcessor
+include_once dirname(__FILE__) . '/update.class.php';
+class modExtraItemDisableProcessor extends modExtraItemUpdateProcessor
 {
-    public $objectType = 'modExtraItem';
-    public $classKey = 'modExtraItem';
-    public $languageTopics = ['modextra'];
-    //public $permission = 'save';
-
-
-    /**
-     * @return array|string
-     */
-    public function process()
+    public function beforeSet()
     {
-        if (!$this->checkPermissions()) {
-            return $this->failure($this->modx->lexicon('access_denied'));
-        }
-
-        $ids = $this->modx->fromJSON($this->getProperty('ids'));
-        if (empty($ids)) {
-            return $this->failure($this->modx->lexicon('modextra_item_err_ns'));
-        }
-
-        foreach ($ids as $id) {
-            /** @var modExtraItem $object */
-            if (!$object = $this->modx->getObject($this->classKey, $id)) {
-                return $this->failure($this->modx->lexicon('modextra_item_err_nf'));
-            }
-
-            $object->set('active', false);
-            $object->save();
-        }
-
-        return $this->success();
+        $this->setProperty('active', false);
+        return true;
     }
-
 }
-
 return 'modExtraItemDisableProcessor';

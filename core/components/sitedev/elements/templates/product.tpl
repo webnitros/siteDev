@@ -3,7 +3,7 @@
 <div id="content" class="main">
     <div class="row">
         <div class="col-md-12">
-            [[$msProduct.content]]
+            {$modx->getChunk('msProduct.content')}
         </div>
     </div>
 </div>

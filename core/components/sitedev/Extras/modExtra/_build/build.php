@@ -22,14 +22,18 @@ class modExtraPackage
      * @param $core_path
      * @param array $config
      */
-    public function __construct($core_path, array $config = [])
+    public function __construct($core_path, array $config = [], &$modx = null)
     {
-        /** @noinspection PhpIncludeInspection */
-        require($core_path . 'model/modx/modx.class.php');
-        /** @var modX $modx */
-        $this->modx = new modX();
-        $this->modx->initialize('mgr');
-        $this->modx->getService('error', 'error.modError');
+        if (is_null($modx)) {
+            /** @noinspection PhpIncludeInspection */
+            require($core_path . 'model/modx/modx.class.php');
+            /** @var modX $modx */
+            $this->modx = new modX();
+            $this->modx->initialize('mgr');
+            $this->modx->getService('error', 'error.modError');
+        } else {
+            $this->modx = $modx;
+        }
 
         $root = dirname(dirname(__FILE__)) . '/';
         $assets = $root . 'assets/components/' . $config['name_lower'] . '/';
@@ -50,6 +54,12 @@ class modExtraPackage
         $this->modx->setLogLevel($this->config['log_level']);
         $this->modx->setLogTarget($this->config['log_target']);
 
+
+        if (!$this->modx->getAuthenticatedUser('mgr')) {
+            echo 'Access closed'.PHP_EOL;
+            die('You can download or buy the application in <a href="https://modstore.pro/">modstore.pro</a>');
+        }
+
         $this->initialize();
     }
 
@@ -61,6 +71,11 @@ class modExtraPackage
     {
         $this->builder = $this->modx->getService('transport.modPackageBuilder');
         $this->builder->createPackage($this->config['name_lower'], $this->config['version'], $this->config['release']);
+
+        if ($this->config['encryption_enable']) {
+            $this->encryption();
+        }
+
         $this->builder->registerNamespace($this->config['name_lower'], false, true, '{core_path}components/' . $this->config['name_lower'] . '/');
         $this->modx->log(modX::LOG_LEVEL_INFO, 'Created Transport Package and Namespace.');
 
@@ -73,9 +88,54 @@ class modExtraPackage
             xPDOTransport::RELATED_OBJECTS => true,
             xPDOTransport::RELATED_OBJECT_ATTRIBUTES => [],
         ];
+
+        if ($this->config['encryption_enable']) {
+            // Шифрация
+            $this->category_attributes['vehicle_class'] = 'encryptedVehicle';
+            $this->category_attributes[xPDOTransport::ABORT_INSTALL_ON_VEHICLE_FAIL] = true;
+        }
+
         $this->modx->log(modX::LOG_LEVEL_INFO, 'Created main Category.');
     }
 
+    protected function encryption()
+    {
+        $client = $this->modx->getService('rest.modRestCurlClient');
+        $result = $client->request('https://modstore.pro/extras/package/', 'encode', 'POST', array(
+            'package' => $this->config['name'],
+            'http_host' => $this->modx->getOption('http_host'),
+            'username' => $this->config['encryption']['username'],
+            'api_key' => $this->config['encryption']['api_key'],
+            'version' => $this->config['version'] . '-' . $this->config['release'],
+            'vehicle_version' => '2.0.0'
+        ), array('contentType' => 'application/xml'));
+        $data = new SimpleXMLElement($result);
+
+
+        if (!empty($data->key)) {
+            $this->modx->log(modX::LOG_LEVEL_INFO, 'Key: ' . $data->key);
+        } elseif (!empty($data->message)) {
+            $this->modx->log(modX::LOG_LEVEL_INFO, 'Error: ' . $data->message);
+        }
+
+        define('PKG_ENCODE_KEY', $data->key);
+        $this->builder->package->put(array(
+            'source' => $this->config['core'] . 'model/encryptedvehicle.class.php',
+            'target' => "return MODX_CORE_PATH . 'components/" . $this->config['name_lower'] . "/model/';",
+        ), array('vehicle_class' => 'xPDOFileVehicle', xPDOTransport::UNINSTALL_FILES => false));
+
+        $this->builder->putVehicle($this->builder->createVehicle(
+            array(
+                'source' => $this->config['resolvers'] . 'encryption.php',
+            ), array(
+                'vehicle_class' => 'xPDOScriptVehicle'
+            )
+        ));
+
+        $this->modx->loadClass('transport.xPDOObjectVehicle', XPDO_CORE_PATH, true, true);
+        require_once $this->config['core'] . 'model/encryptedvehicle.class.php';
+
+    }
 
     /**
      * Update the model
@@ -167,6 +227,143 @@ class modExtraPackage
         $this->modx->log(modX::LOG_LEVEL_INFO, 'Packaged in ' . count($settings) . ' System Settings');
     }
 
+    /**
+     * Add events
+     */
+    protected function events()
+    {
+        /** @noinspection PhpIncludeInspection */
+        $events = include($this->config['elements'] . 'events.php');
+        if (!is_array($events)) {
+            $this->modx->log(modX::LOG_LEVEL_ERROR, 'Could not package in System events');
+
+            return;
+        }
+        $attributes = [
+            xPDOTransport::UNIQUE_KEY => 'name',
+            xPDOTransport::PRESERVE_KEYS => true,
+            xPDOTransport::UPDATE_OBJECT => !empty($this->config['update']['events']),
+            xPDOTransport::RELATED_OBJECTS => false,
+        ];
+
+        foreach ($events as $name => $data) {
+
+            /** @var modEvent $event */
+            $event = $this->modx->newObject('modEvent');
+            $event->fromArray([
+                'name' => $data,
+                'service' => 6,
+                'groupname' => $this->config['name_lower'],
+
+            ], '', true);
+            $vehicle = $this->builder->createVehicle($event, $attributes);
+            $this->builder->putVehicle($vehicle);
+        }
+        $this->modx->log(modX::LOG_LEVEL_INFO, 'Packaged in ' . count($events) . ' System events');
+    }
+
+
+    /**
+     * Add policies
+     * @return array|null
+     */
+    protected function AccessPolices()
+    {
+        $AccessPolices = include($this->config['elements'] . 'accesspolices.php');
+        if (!is_array($AccessPolices)) {
+            $this->modx->log(modX::LOG_LEVEL_ERROR, 'Could not package in Access Policies');
+            return null;
+        }
+
+        $rows = null;
+        foreach ($AccessPolices as $name => $data) {
+
+            /** @var modAccessPolicy $object */
+            $object = $this->modx->newObject('modAccessPolicy');
+            $object->fromArray(array_merge([
+                'name' => $name,
+            ], $data), '', true, true);
+
+            $rows[$data['templateName']][] = $object;
+
+        }
+        return $rows;
+    }
+
+    /**
+     * Add policies
+     */
+    protected function policies()
+    {
+        /** @noinspection PhpIncludeInspection */
+        $policiesTemplates = include($this->config['elements'] . 'policies.php');
+        if (!is_array($policiesTemplates)) {
+            $this->modx->log(modX::LOG_LEVEL_ERROR, 'Could not package in Access Policies Templates');
+            return;
+        }
+        $attributes = [
+            xPDOTransport::PRESERVE_KEYS => false,
+            xPDOTransport::UPDATE_OBJECT => !empty($this->config['update']['policies']),
+            xPDOTransport::UNIQUE_KEY => 'name',
+            xPDOTransport::RELATED_OBJECTS => true,
+            xPDOTransport::RELATED_OBJECT_ATTRIBUTES => array(
+                'Policies' => array(
+                    xPDOTransport::PRESERVE_KEYS => false,
+                    xPDOTransport::UPDATE_OBJECT => true,
+                    xPDOTransport::UNIQUE_KEY => 'name',
+                ),
+                'Permissions' => array(
+                    xPDOTransport::PRESERVE_KEYS => false,
+                    xPDOTransport::UPDATE_OBJECT => true,
+                    xPDOTransport::UNIQUE_KEY => 'name',
+                ),
+            ),
+        ];
+
+        $AccessPolices = $this->AccessPolices();
+        foreach ($policiesTemplates as $name => $data) {
+
+            /** @var modAccessPolicyTemplate $object */
+            $object = $this->modx->newObject('modAccessPolicyTemplate');
+            $object->fromArray(array_merge([
+                'name' => $name,
+            ], $data), '', true, true);
+
+
+            $template_group = 5;
+            $template_group_name = $data['template_group_name'];
+            if ($group = $this->modx->getObject('modAccessPolicyTemplateGroup', array('name' => $template_group_name))) {
+                $template_group = $group->get('id');
+            }
+            $object->set('template_group', $template_group);
+
+            // Add Access Policies
+            if ($AccessPolices && isset($AccessPolices[$name])) {
+                $object->addMany($AccessPolices[$name], 'Policies');
+            }
+
+            // Add Access Permissions
+            if (!empty($data['permissions'])) {
+                foreach ($data['permissions'] as $k1 => $k2) {
+                    /** @var modAccessPermission $object */
+                    $Permission = $this->modx->newObject('modAccessPermission');
+                    $Permission->fromArray(array(
+                        'name' => $k1,
+                        'description' => $k1,
+                        'value' => $k2,
+                    ), '', true, true);
+
+                    $object->addMany($Permission, 'Permissions');
+                }
+            }
+
+            $vehicle = $this->builder->createVehicle($object, $attributes);
+            $this->builder->putVehicle($vehicle);
+        }
+
+        $this->modx->log(modX::LOG_LEVEL_INFO, 'Packaged in ' . count($policiesTemplates) . ' Access Policies Templates');
+
+    }
 
     /**
      * Add menus
@@ -614,20 +811,7 @@ class modExtraPackage
 
         // Add resolvers into vehicle
         $resolvers = scandir($this->config['resolvers']);
-        // Remove Office files
-        if (!in_array('office', $resolvers)) {
-            if ($cache = $this->modx->getCacheManager()) {
-                $dirs = [
-                    $this->config['assets'] . 'js/office',
-                    $this->config['core'] . 'controllers/office',
-                    $this->config['core'] . 'processors/office',
-                ];
-                foreach ($dirs as $dir) {
-                    $cache->deleteTree($dir, ['deleteTop' => true, 'skipDirs' => false, 'extensions' => []]);
-                }
-            }
-            $this->modx->log(modX::LOG_LEVEL_INFO, 'Deleted Office files');
-        }
+
         foreach ($resolvers as $resolver) {
             if (in_array($resolver[0], ['_', '.'])) {
                 continue;
@@ -644,6 +828,13 @@ class modExtraPackage
             'readme' => file_get_contents($this->config['core'] . 'docs/readme.txt'),
         ]);
         $this->modx->log(modX::LOG_LEVEL_INFO, 'Added package attributes and setup options.');
+
+        // Шифрация пакета
+        if ($this->config['encryption_enable']) {
+            $this->builder->putVehicle($this->builder->createVehicle(array(
+                'source' => $this->config['resolvers'] . 'encryption.php',
+            ), array('vehicle_class' => 'xPDOScriptVehicle')));
+        }
 
         $this->modx->log(modX::LOG_LEVEL_INFO, 'Packing up transport package zip...');
         $this->builder->pack();

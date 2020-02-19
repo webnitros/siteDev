@@ -1,5 +1,5 @@
-Changelog for msDeferredMessages.
+Changelog for modExtra.
 
-1.0.0-pl
+1.0.0-beta
 ==============
 - New build script.

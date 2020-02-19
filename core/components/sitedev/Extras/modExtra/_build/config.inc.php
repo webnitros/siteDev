@@ -11,10 +11,15 @@ if (!defined('MODX_CORE_PATH')) {
 return [
     'name' => 'modExtra',
     'name_lower' => 'modextra',
-    'version' => '2.0.0',
-    'release' => 'pl',
+    'version' => '1.0.0',
+    'release' => 'beta',
     // Install package to site right after build
     'install' => true,
+    'encryption_enable' => false,
+    'encryption' => array(
+        'username' => '',
+        'api_key' => '',
+    ),
     // Which elements should be updated on package upgrade
     'update' => [
         'chunks' => false,
@@ -25,6 +30,8 @@ return [
         'snippets' => true,
         'templates' => false,
         'widgets' => false,
+        'policies' => false,
+        'events' => false,
     ],
     // Which elements should be static by default
     'static' => [
@@ -37,4 +44,9 @@ return [
     'log_target' => php_sapi_name() == 'cli' ? 'ECHO' : 'HTML',
     // Download transport.zip after build
     'download' => !empty($_REQUEST['download']),
+    // Copy file
+    'copy' => !empty($_REQUEST['copy']),
+    'copy_server' => '',
+    #'copy_server' => 'http://s16305.h4.modhost.pro/copy_package.php',
+    'auto_install' => false,
 ];

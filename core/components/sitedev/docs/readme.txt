@@ -1,7 +1,7 @@
 --------------------
 siteDev - сайт для разработки приложений
 --------------------
-Author: John Doe <john@doe.com>
+Author: Stepanenko Andrey <info@bustep.ru>
 --------------------
 
 Вызов страниц в форате markdown

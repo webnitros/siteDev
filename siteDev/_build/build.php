@@ -43,6 +43,7 @@ class siteDevPackage
             'build' => $root . '_build/',
             'elements' => $root . '_build/elements/',
             'resolvers' => $root . '_build/resolvers/',
+            'packages' => $root . '_build/packages/',
 
             'assets' => $assets,
             'core' => $core,
@@ -363,6 +364,145 @@ class siteDevPackage
 
 
     /**
+     * Add events
+     */
+    protected function events()
+    {
+        /** @noinspection PhpIncludeInspection */
+        $events = include($this->config['elements'] . 'events.php');
+        if (!is_array($events)) {
+            $this->modx->log(modX::LOG_LEVEL_ERROR, 'Could not package in System events');
+
+            return;
+        }
+        $attributes = [
+            xPDOTransport::UNIQUE_KEY => 'name',
+            xPDOTransport::PRESERVE_KEYS => true,
+            xPDOTransport::UPDATE_OBJECT => !empty($this->config['update']['events']),
+            xPDOTransport::RELATED_OBJECTS => false,
+        ];
+
+        foreach ($events as $name => $data) {
+
+            /** @var modEvent $event */
+            $event = $this->modx->newObject('modEvent');
+            $event->fromArray([
+                'name' => $data,
+                'service' => 6,
+                'groupname' => $this->config['name_lower'],
+
+            ], '', true);
+            $vehicle = $this->builder->createVehicle($event, $attributes);
+            $this->builder->putVehicle($vehicle);
+        }
+        $this->modx->log(modX::LOG_LEVEL_INFO, 'Packaged in ' . count($events) . ' System events');
+    }
+
+
+    /**
+     * Add policies
+     * @return array|null
+     */
+    protected function AccessPolices()
+    {
+        $AccessPolices = include($this->config['elements'] . 'accesspolices.php');
+        if (!is_array($AccessPolices)) {
+            $this->modx->log(modX::LOG_LEVEL_ERROR, 'Could not package in Access Policies');
+            return null;
+        }
+
+        $rows = null;
+        foreach ($AccessPolices as $name => $data) {
+
+            /** @var modAccessPolicy $object */
+            $object = $this->modx->newObject('modAccessPolicy');
+            $object->fromArray(array_merge([
+                'name' => $name,
+            ], $data), '', true, true);
+
+            $rows[$data['templateName']][] = $object;
+
+        }
+        return $rows;
+    }
+
+    /**
+     * Add policies
+     */
+    protected function policies()
+    {
+        /** @noinspection PhpIncludeInspection */
+        $policiesTemplates = include($this->config['elements'] . 'policies.php');
+        if (!is_array($policiesTemplates)) {
+            $this->modx->log(modX::LOG_LEVEL_ERROR, 'Could not package in Access Policies Templates');
+            return;
+        }
+        $attributes = [
+            xPDOTransport::PRESERVE_KEYS => false,
+            xPDOTransport::UPDATE_OBJECT => !empty($this->config['update']['policies']),
+            xPDOTransport::UNIQUE_KEY => 'name',
+            xPDOTransport::RELATED_OBJECTS => true,
+            xPDOTransport::RELATED_OBJECT_ATTRIBUTES => array(
+                'Policies' => array(
+                    xPDOTransport::PRESERVE_KEYS => false,
+                    xPDOTransport::UPDATE_OBJECT => true,
+                    xPDOTransport::UNIQUE_KEY => 'name',
+                ),
+                'Permissions' => array(
+                    xPDOTransport::PRESERVE_KEYS => false,
+                    xPDOTransport::UPDATE_OBJECT => true,
+                    xPDOTransport::UNIQUE_KEY => 'name',
+                ),
+            ),
+        ];
+
+        $AccessPolices = $this->AccessPolices();
+        foreach ($policiesTemplates as $name => $data) {
+
+            /** @var modAccessPolicyTemplate $object */
+            $object = $this->modx->newObject('modAccessPolicyTemplate');
+            $object->fromArray(array_merge([
+                'name' => $name,
+            ], $data), '', true, true);
+
+
+            $template_group = 5;
+            $template_group_name = $data['template_group_name'];
+            if ($group = $this->modx->getObject('modAccessPolicyTemplateGroup', array('name' => $template_group_name))) {
+                $template_group = $group->get('id');
+            }
+            $object->set('template_group', $template_group);
+
+            // Add Access Policies
+            if ($AccessPolices && isset($AccessPolices[$name])) {
+                $object->addMany($AccessPolices[$name], 'Policies');
+            }
+
+            // Add Access Permissions
+            if (!empty($data['permissions'])) {
+                foreach ($data['permissions'] as $k1 => $k2) {
+                    /** @var modAccessPermission $object */
+                    $Permission = $this->modx->newObject('modAccessPermission');
+                    $Permission->fromArray(array(
+                        'name' => $k1,
+                        'description' => $k1,
+                        'value' => $k2,
+                    ), '', true, true);
+
+                    $object->addMany($Permission, 'Permissions');
+                }
+            }
+
+            $vehicle = $this->builder->createVehicle($object, $attributes);
+            $this->builder->putVehicle($vehicle);
+        }
+
+        $this->modx->log(modX::LOG_LEVEL_INFO, 'Packaged in ' . count($policiesTemplates) . ' Access Policies Templates');
+
+    }
+
+
+    /**
      * Add chunks
      */
     protected function chunks()
@@ -590,6 +730,13 @@ class siteDevPackage
         ]);
 
 
+        // inc
+        $vehicle->resolve('file', [
+            'source' =>  $this->config['core'].'inc/',
+            'target' => "return MODX_BASE_PATH;",
+        ]);
+
+
         // Elements resources
         $vehicle->resolve('file', [
             'source' =>  $this->config['core'].'elements/resources/',
@@ -597,16 +744,17 @@ class siteDevPackage
         ]);
 
         // Elements markdown
-        $vehicle->resolve('file', [
+        /*$vehicle->resolve('file', [
             'source' =>  $this->config['core'].'elements/markdown/',
             'target' => "return MODX_CORE_PATH.'elements/';",
-        ]);
+        ]);*/
 
         // Elements chunks
         $vehicle->resolve('file', [
             'source' =>  $this->config['core'].'elements/chunks/',
             'target' => "return MODX_CORE_PATH.'elements/';",
         ]);
+
 
         // Elements templates
         $vehicle->resolve('file', [
@@ -632,6 +780,9 @@ class siteDevPackage
             'changelog' => file_get_contents($this->config['core'] . 'docs/changelog.txt'),
             'license' => file_get_contents($this->config['core'] . 'docs/license.txt'),
             'readme' => file_get_contents($this->config['core'] . 'docs/readme.txt'),
+            'setup-options' => array(
+                'source' => $this->config['build'].'setup.options.php',
+            ),
         ]);
         $this->modx->log(modX::LOG_LEVEL_INFO, 'Added package attributes and setup options.');
 
@@ -645,6 +796,76 @@ class siteDevPackage
         return $this->builder;
     }
 
+
+
+    /**
+     * Автоматическая закачка пакета на сайт для тестирования
+     * @param string $source путь к пакету
+     * @return bool
+     */
+    public function copyFile($source)
+    {
+
+        $copy_server = trim($this->config['copy_server']);
+        if (empty($copy_server)) {
+            $this->modx->log(modX::LOG_LEVEL_INFO, 'Server with test site not defined ' . $copy_server . ' ');
+            return false;
+        }
+
+
+        $cache = $this->modx->getCacheManager();
+        $filename = basename($source);
+
+        $target = $this->config['packages'] . $filename;
+
+        if (!file_exists($this->config['packages'])) {
+            mkdir($this->config['packages'], 0777);
+        }
+
+        if (file_exists($target)) {
+            unlink($target);
+        }
+
+        if ($cache->copyFile($source, $target)) {
+            $this->modx->log(modX::LOG_LEVEL_INFO, 'Packaged copy ' . $filename . ' ');;
+        } else {
+            $this->modx->log(modX::LOG_LEVEL_INFO, 'Packaged not copy ' . $filename . '');
+        }
+
+
+        $path = str_ireplace(MODX_BASE_PATH, '', $this->config['packages']);
+
+
+        $url = 'http://' . $_SERVER['HTTP_HOST'] . '/' . $path . $filename;
+
+
+        //Проходим авторизациию для создания сессии
+        $resultAuth = file_get_contents($copy_server . '?auth=1');
+        $resultAuth = $this->modx->fromJSON($resultAuth);
+
+        if ($resultAuth['success']) {
+
+
+            /* @var modRestCurlClient $curlClient */
+            $curlClient = $this->modx->getService('rest.modRestCurlClient');
+
+
+            $result = $curlClient->request($copy_server, '', 'GET', array(
+                'auto_install' => $this->config['auto_install'],
+                'url' => $url,
+                'session_id' => $resultAuth['data']['session_id']
+            ));
+            $result = (array)json_decode($result, true);
+
+            if (!$result['success']) {
+                $this->modx->log(modX::LOG_LEVEL_INFO, 'An error occurred while downloading the package. ' . $result['message'] . '');
+                return false;
+            }
+
+        }
+        return true;
+    }
+
 }
 
 /** @var array $config */
@@ -654,6 +875,12 @@ if (!file_exists(dirname(__FILE__) . '/config.inc.php')) {
 $config = require(dirname(__FILE__) . '/config.inc.php');
 $install = new siteDevPackage(MODX_CORE_PATH, $config);
 $builder = $install->process();
+
+if (!empty($config['copy'])) {
+    $name = $builder->getSignature() . '.transport.zip';
+    $path = MODX_CORE_PATH . 'packages/' . $name;
+    $install->copyFile($path);
+}
 
 if (!empty($config['download'])) {
     $name = $builder->getSignature() . '.transport.zip';

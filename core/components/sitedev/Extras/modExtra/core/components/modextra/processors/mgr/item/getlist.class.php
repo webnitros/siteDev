@@ -6,6 +6,7 @@ class modExtraItemGetListProcessor extends modObjectGetListProcessor
     public $classKey = 'modExtraItem';
     public $defaultSortField = 'id';
     public $defaultSortDirection = 'DESC';
+    public $languageTopics = ['modextra:manager'];
     //public $permission = 'list';
 
 
@@ -39,7 +40,14 @@ class modExtraItemGetListProcessor extends modObjectGetListProcessor
                 'OR:description:LIKE' => "%{$query}%",
             ]);
         }
-
+        $active = $this->getProperty('active');
+        if ($active != '') {
+            $c->where("{$this->objectType}.active={$active}");
+        }
+        $resource = trim($this->getProperty('resource'));
+        if (!empty($resource)) {
+            $c->where("{$this->objectType}.resource_id={$resource}");
+        }
         return $c;
     }
 
@@ -59,7 +67,6 @@ class modExtraItemGetListProcessor extends modObjectGetListProcessor
             'cls' => '',
             'icon' => 'icon icon-edit',
             'title' => $this->modx->lexicon('modextra_item_update'),
-            //'multiple' => $this->modx->lexicon('modextra_items_update'),
             'action' => 'updateItem',
             'button' => true,
             'menu' => true,
@@ -97,10 +104,8 @@ class modExtraItemGetListProcessor extends modObjectGetListProcessor
             'button' => true,
             'menu' => true,
         ];
-
         return $array;
     }
-
 }
 
 return 'modExtraItemGetListProcessor';

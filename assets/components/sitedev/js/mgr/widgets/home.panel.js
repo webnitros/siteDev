@@ -20,13 +20,13 @@ siteDev.panel.Home = function (config) {
             border: true,
             hideMode: 'offsets',
             items: [{
-                title: _('sitedev_items'),
+                title: _('sitedev_packages'),
                 layout: 'anchor',
                 items: [{
                     html: _('sitedev_intro_msg'),
                     cls: 'panel-desc',
                 }, {
-                    xtype: 'sitedev-grid-items',
+                    xtype: 'sitedev-grid-packages',
                     cls: 'main-wrapper',
                 }]
             }]
